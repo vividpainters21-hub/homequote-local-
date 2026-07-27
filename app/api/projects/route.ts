@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 
 const projectSchema = z.object({
   address: z.string().min(2), city: z.string().min(2), state: z.string().length(2), postalCode: z.string().regex(/^\d{5}$/),
-  service: z.string().min(2), description: z.string().min(10), answers: z.record(z.unknown()).default({}), estimate: z.record(z.unknown()),
+ service: z.string().min(2), description: z.string().min(10), answers: z.record(z.string(), z.unknown()).default({}), estimate: z.record(z.string(), z.unknown()),
   customerPriceLow: z.number().nonnegative(), customerPriceHigh: z.number().nonnegative(), contractorPayoutLow: z.number().nonnegative(), contractorPayoutHigh: z.number().nonnegative(),
 });
 
