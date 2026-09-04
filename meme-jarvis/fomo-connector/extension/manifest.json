@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Meme Jarvis — Fomo Capture",
+  "version": "0.1.0",
+  "description": "Reads network responses your own logged-in Fomo tab already received (read-only) and forwards feed activity to your local Meme Jarvis backend. Never touches your Fomo password. Only runs on tabs you explicitly enable.",
+  "permissions": ["storage", "scripting", "activeTab", "alarms"],
+  "optional_host_permissions": ["*://*/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Meme Jarvis — Fomo Capture"
+  }
+}

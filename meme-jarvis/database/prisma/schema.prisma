@@ -1,0 +1,388 @@
+// Meme Jarvis database schema
+// Postgres (Supabase-compatible). Run `pnpm db:migrate` from /meme-jarvis after
+// setting DATABASE_URL in meme-jarvis/.env
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum TradeSide {
+  BUY
+  SELL
+}
+
+enum TradeSource {
+  FOMO
+  ONCHAIN
+  MANUAL
+}
+
+enum AlertCategory {
+  SMART_MONEY_CLUSTER
+  HIGH_SCORE
+  RAPID_SCORE_INCREASE
+  SMART_MONEY_EXIT
+  WHALE_DUMP
+  LIQUIDITY_WARNING
+  RUG_WARNING
+  PAPER_ENTRY
+  PAPER_EXIT
+}
+
+enum PaperPositionStatus {
+  OPEN
+  CLOSED
+}
+
+enum ExitReason {
+  STOP_LOSS
+  TAKE_PROFIT_1
+  TAKE_PROFIT_2
+  TAKE_PROFIT_3
+  TRAILING_STOP
+  SMART_MONEY_EXIT
+  RISK_SCORE_SPIKE
+  LIQUIDITY_COLLAPSE
+  TIME_BASED
+  MANUAL
+}
+
+/// A tracked trader / wallet. Our own scoring lives here â€” never trust an
+/// external "smart money" label without enough observed sample size.
+model Wallet {
+  id                String   @id @default(cuid())
+  address           String   @unique
+  fomoUsername      String?
+  label             String?
+  firstSeenAt       DateTime @default(now())
+  lastSeenAt        DateTime @default(now())
+
+  // Cached aggregate stats (recomputed by wallet-intelligence engine)
+  totalTrades       Int      @default(0)
+  winningTrades     Int      @default(0)
+  losingTrades      Int      @default(0)
+  winRate           Float    @default(0)
+  realizedPnlUsd    Float    @default(0)
+  unrealizedPnlUsd  Float    @default(0)
+  avgWinnerUsd      Float    @default(0)
+  avgLoserUsd       Float    @default(0)
+  medianReturnPct   Float    @default(0)
+  profitFactor      Float    @default(0)
+  avgHoldTimeSec    Int      @default(0)
+  medianHoldTimeSec Int      @default(0)
+  maxDrawdownPct    Float    @default(0)
+  rugsPurchased     Int      @default(0)
+  collapseRatePct   Float    @default(0)
+  consistencyScore  Float    @default(0)
+  perf7dPct         Float    @default(0)
+  perf30dPct        Float    @default(0)
+  perfLifetimePct   Float    @default(0)
+  traderScore       Float    @default(0)
+  sampleSizeOk      Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  trades         Trade[]
+  clusterMembers ClusterMember[]
+  scoreHistory   WalletScoreHistory[]
+
+  @@index([traderScore])
+  @@index([address])
+}
+
+model WalletScoreHistory {
+  id          String   @id @default(cuid())
+  walletId    String
+  wallet      Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  traderScore Float
+  winRate     Float
+  realizedPnlUsd Float
+  recordedAt  DateTime @default(now())
+
+  @@index([walletId, recordedAt])
+}
+
+/// A Solana token / mint we are tracking.
+model Token {
+  id              String   @id @default(cuid())
+  mintAddress     String   @unique
+  symbol          String?
+  name            String?
+  deployerAddress String?
+  firstSeenAt     DateTime @default(now())
+  tokenCreatedAt  DateTime?
+  mintAuthorityRevoked   Boolean?
+  freezeAuthorityRevoked Boolean?
+
+  trades          Trade[]
+  snapshots       TokenSnapshot[]
+  holders         TokenHolderSnapshot[]
+  clusters        Cluster[]
+  riskAssessments RiskAssessment[]
+  opportunityScores OpportunityScore[]
+  alerts          Alert[]
+  paperPositions  PaperPosition[]
+  paperTrades     PaperTrade[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([symbol])
+}
+
+/// Time-series market-data snapshot for a token (from DEX Screener / Helius / Birdeye).
+model TokenSnapshot {
+  id                 String   @id @default(cuid())
+  tokenId            String
+  token              Token    @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  priceUsd           Float
+  liquidityUsd       Float
+  marketCapUsd       Float?
+  fdvUsd             Float?
+  volume1mUsd        Float?
+  volume5mUsd        Float?
+  volume15mUsd       Float?
+  volume1hUsd        Float?
+  buyCount5m         Int?
+  sellCount5m        Int?
+  uniqueBuyers5m     Int?
+  uniqueSellers5m    Int?
+  priceChange5mPct   Float?
+  priceChange1hPct   Float?
+  liquidityChangePct Float?
+  txVelocityPerMin   Float?
+  source             String   @default("dexscreener")
+  recordedAt         DateTime @default(now())
+
+  @@index([tokenId, recordedAt])
+}
+
+model TokenHolderSnapshot {
+  id                     String   @id @default(cuid())
+  tokenId                String
+  token                  Token    @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  top10HolderPct         Float?
+  top20HolderPct         Float?
+  holderCount            Int?
+  suspiciousClusterFlag  Boolean  @default(false)
+  holdersJson            Json?
+  recordedAt             DateTime @default(now())
+
+  @@index([tokenId, recordedAt])
+}
+
+/// A single observed buy/sell, from Fomo capture and/or on-chain confirmation.
+model Trade {
+  id              String      @id @default(cuid())
+  walletId        String
+  wallet          Wallet      @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  tokenId         String
+  token           Token       @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  side            TradeSide
+  source          TradeSource @default(FOMO)
+  amountTokens    Float?
+  valueUsd        Float?
+  priceUsd        Float?
+  txSignature     String?
+  traderPnlUsd    Float?
+  traderWinRatePct Float?
+  positionJson    Json?
+  occurredAt      DateTime
+  createdAt       DateTime    @default(now())
+
+  @@index([tokenId, occurredAt])
+  @@index([walletId, occurredAt])
+  @@index([occurredAt])
+}
+
+/// Raw, unprocessed events captured by the Fomo browser extension. Kept for
+/// audit / replay since the extension relies on undocumented page behavior.
+model FomoEvent {
+  id          String   @id @default(cuid())
+  rawPayload  Json
+  processed   Boolean  @default(false)
+  processingError String?
+  receivedAt  DateTime @default(now())
+
+  @@index([processed, receivedAt])
+}
+
+/// A detected smart-money cluster: N strong traders entering the same token
+/// within a short window.
+model Cluster {
+  id                String   @id @default(cuid())
+  tokenId           String
+  token             Token    @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  windowSeconds     Int
+  memberCount       Int
+  avgTraderScore    Float
+  avgWinRatePct     Float
+  totalAmountUsd    Float
+  buyingAccelerationPerMin Float?
+  priceChangeSincePct Float?
+  stillHoldingCount Int      @default(0)
+  exitingCount      Int      @default(0)
+  clusterScore      Float
+  firstEntryAt      DateTime
+  lastEntryAt       DateTime
+  createdAt         DateTime @default(now())
+
+  members ClusterMember[]
+  alerts  Alert[]
+
+  @@index([tokenId, createdAt])
+  @@index([clusterScore])
+}
+
+model ClusterMember {
+  id        String   @id @default(cuid())
+  clusterId String
+  cluster   Cluster  @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  walletId  String
+  wallet    Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  tradeId   String?
+  enteredAt DateTime
+  exitedAt  DateTime?
+
+  @@index([clusterId])
+}
+
+/// Risk score (0=low risk, 100=extremely dangerous) for a token at a point in time.
+model RiskAssessment {
+  id                 String   @id @default(cuid())
+  tokenId            String
+  token              Token    @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  riskScore          Float
+  criticalDisqualified Boolean @default(false)
+  flags              Json
+  computedAt         DateTime @default(now())
+
+  @@index([tokenId, computedAt])
+}
+
+/// Opportunity score (0-100), explainable, config-driven weights.
+model OpportunityScore {
+  id           String   @id @default(cuid())
+  tokenId      String
+  token        Token    @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  score        Float
+  breakdown    Json
+  reasons      Json
+  warnings     Json
+  status       String
+  computedAt   DateTime @default(now())
+
+  @@index([tokenId, computedAt])
+  @@index([score])
+}
+
+/// Versioned, configurable scoring weights (opportunity + risk). Backtestable.
+model ScoringConfig {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  weights   Json
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Alert {
+  id           String        @id @default(cuid())
+  category     AlertCategory
+  tokenId      String?
+  token        Token?        @relation(fields: [tokenId], references: [id], onDelete: SetNull)
+  clusterId    String?
+  cluster      Cluster?      @relation(fields: [clusterId], references: [id], onDelete: SetNull)
+  message      String
+  payload      Json?
+  telegramSent Boolean       @default(false)
+  telegramMessageId String?
+  createdAt    DateTime      @default(now())
+
+  @@index([category, createdAt])
+}
+
+/// Paper-trading account settings. Live trading defaults to OFF everywhere in
+/// this system; there is no execution path to a real wallet.
+model PaperAccount {
+  id                    String   @id @default(cuid())
+  name                  String   @unique
+  startingBalanceUsd    Float
+  currentBalanceUsd     Float
+  positionSizeUsd       Float
+  riskPerTradePct       Float
+  maxConcurrentPositions Int
+  maxDailyLossUsd       Float
+  minOpportunityScore   Float
+  maxRiskScore          Float
+  maxSlippagePct        Float
+  feeBps                Int
+  minLiquidityUsd       Float
+  maxPumpBeforeEntryPct Float
+  minStrongTraders      Int
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  positions PaperPosition[]
+  trades    PaperTrade[]
+}
+
+model PaperPosition {
+  id             String   @id @default(cuid())
+  accountId      String
+  account        PaperAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  tokenId        String
+  token          Token    @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  status         PaperPositionStatus @default(OPEN)
+  entryPriceUsd  Float
+  sizeUsd        Float
+  tokensHeld     Float
+  feesUsd        Float
+  slippagePct    Float
+  stopLossPct    Float
+  takeProfit1Pct Float
+  takeProfit2Pct Float
+  takeProfit3Pct Float
+  trailingStopPct Float
+  highWaterMarkUsd Float
+  entryReason    Json
+  signalSnapshot Json
+  openedAt       DateTime @default(now())
+
+  @@index([accountId, status])
+}
+
+model PaperTrade {
+  id                String     @id @default(cuid())
+  accountId         String
+  account           PaperAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  tokenId           String
+  token             Token      @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  entryPriceUsd     Float
+  exitPriceUsd      Float
+  sizeUsd           Float
+  feesUsd           Float
+  slippagePct       Float
+  pnlUsd            Float
+  returnPct         Float
+  maxFavorableExcursionPct Float
+  maxAdverseExcursionPct   Float
+  entryReason       Json
+  exitReason        ExitReason
+  exitReasonDetail  String?
+  signalSnapshotEntry Json
+  signalSnapshotExit  Json?
+  holdTimeSec       Int
+  openedAt          DateTime
+  closedAt          DateTime  @default(now())
+
+  @@index([accountId, closedAt])
+  @@index([tokenId])
+}

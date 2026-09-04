@@ -1,0 +1,20 @@
+{
+  "name": "meme-jarvis",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Live meme-coin intelligence, smart-wallet tracking, and paper-trading platform for Solana.",
+  "scripts": {
+    "build": "pnpm -r --filter=./database --filter=./shared --filter=./market-data --filter=./solana --filter=./wallet-intelligence --filter=./risk-engine --filter=./scoring-engine --filter=./cluster-engine --filter=./paper-trading --filter=./alerts --filter=./fomo-connector --filter=./mcp-server --filter=./api run build",
+    "dev:api": "pnpm --filter=./api run dev",
+    "dev:dashboard": "pnpm --filter=./dashboard run dev",
+    "dev:mcp": "pnpm --filter=./mcp-server run dev",
+    "db:generate": "pnpm --filter=./database run generate",
+    "db:migrate": "pnpm --filter=./database run migrate",
+    "db:studio": "pnpm --filter=./database run studio",
+    "test": "pnpm --filter=./tests run test",
+    "typecheck": "pnpm -r run typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
