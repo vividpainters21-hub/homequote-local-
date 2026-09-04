@@ -1,0 +1,21 @@
+{
+  "name": "@meme-jarvis/tests",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@meme-jarvis/cluster-engine": "workspace:*",
+    "@meme-jarvis/paper-trading": "workspace:*",
+    "@meme-jarvis/risk-engine": "workspace:*",
+    "@meme-jarvis/scoring-engine": "workspace:*",
+    "@meme-jarvis/shared": "workspace:*",
+    "@meme-jarvis/wallet-intelligence": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.2"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@meme-jarvis/mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@meme-jarvis/database": "workspace:*",
+    "@meme-jarvis/paper-trading": "workspace:*",
+    "@meme-jarvis/shared": "workspace:*",
+    "@meme-jarvis/wallet-intelligence": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.9.0",
+    "dotenv": "^16.4.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3"
+  }
+}
