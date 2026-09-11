@@ -5,7 +5,7 @@ export function DashboardShell({ title, children }: { title: string; children: R
   return (
     <div className="dashboard">
       <aside className="side">
-        <div className="brand">HomeQuote <span>Local</span></div>
+        <div className="brand">VividPro <span>Painters</span></div>
         <hr />
         <p><Link href="/dashboard">Homeowner</Link></p>
         <p><Link href="/contractor">Contractor</Link></p>

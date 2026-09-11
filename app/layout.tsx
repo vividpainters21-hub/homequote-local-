@@ -2,9 +2,15 @@ import './globals.css';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
 export const metadata: Metadata = {
-  title: 'HomeQuote Local | AI-Assisted Home Project Estimates',
-  description: 'Plan a home project, receive an AI-assisted preliminary estimate, and connect with local contractors around Serving all 50 states and Washington, D.C..',
+  metadataBase: new URL(appUrl),
+  title: {
+    default: 'VividPro Painters & Remodeling | Schenectady, NY Painting Estimates',
+    template: '%s | VividPro Painters & Remodeling',
+  },
+  description: 'VividPro Painters & Remodeling provides AI-assisted preliminary estimates for interior and exterior painting, drywall and remodeling in Schenectady, NY and the Capital Region (ZIP codes 12302-12309).',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
