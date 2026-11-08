@@ -1,67 +1,58 @@
-# HomeQuote Local — Laptop Setup Checklist
+# HomeQuote Local — Setup Checklist
 
-## Part 1: Upload the code to GitHub
+You need three free accounts: **GitHub** (code), **Supabase** (database) and **Vercel** (hosting).
+Text and email alerts are optional and can be added later.
 
-1. Download and extract the ZIP.
-2. Open the extracted `homequote-local` folder.
-3. Confirm you see `app`, `components`, `lib`, `supabase`, and `package.json`.
-4. Open your GitHub repository named `homequote-local`.
-5. Click **Add file** → **Upload files**.
-6. Select everything inside the extracted `homequote-local` folder, or drag all of it into the upload area.
-7. Do not upload the ZIP itself.
-8. In the commit box, enter `Upload HomeQuote Local MVP`.
-9. Click **Commit changes**.
+## 1. Supabase (database)
 
-Your repository root should show `package.json` directly. It should not show another `homequote-local` folder that you must open first.
+1. Create a project at supabase.com.
+2. Open **SQL Editor** and run each file in `supabase/migrations/`, in order:
+   `001_init.sql`, then `002_production_foundation.sql`, then `003_jobs_portal.sql`.
+3. **Project Settings → API**: copy the **Project URL**, the **anon / publishable key** and the **service_role key**.
+   The service_role key is a master key. Only ever paste it into Vercel's environment variables.
 
-## Part 2: Connect the repository to Vercel
+## 2. Vercel (hosting)
 
-1. Sign in to Vercel with GitHub.
-2. Click **Add New** → **Project**.
-3. Find `homequote-local` and click **Import**.
-4. Framework should be detected as **Next.js**.
-5. Before deploying, open **Environment Variables**.
+1. Import the GitHub repository at vercel.com → **Add New → Project**.
+2. Under **Environment Variables**, add everything from `.env.example` that you have. Required:
+   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+   - `NEXT_PUBLIC_APP_URL` — your site address, e.g. `https://homequote-local.vercel.app`
+   - `NEXT_PUBLIC_BUSINESS_NAME` and `NEXT_PUBLIC_BUSINESS_PHONE` — shown to customers
+3. Recommended: `ANTHROPIC_API_KEY` for AI estimates (without it, a built-in calculator is used).
+4. Deploy. In Supabase, **Authentication → URL Configuration**: set the Site URL to your Vercel address.
 
-Add these variables:
+## 3. Make your contractor account
 
-- `NEXT_PUBLIC_SUPABASE_URL` — your Supabase Project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — your Supabase publishable/anon key
-- `SUPABASE_SERVICE_ROLE_KEY` — leave blank until you intentionally retrieve it; never expose it publicly
-- `ANTHROPIC_API_KEY` — optional at first; without it, the local estimator is used
-- `STRIPE_SECRET_KEY` — leave blank until payments are built
-- `NEXT_PUBLIC_APP_URL` — your Vercel URL after the first deployment
+1. Go to `/signup` on your site and create your account, then confirm the email.
+2. In Supabase **SQL Editor**, run this with your email to give yourself access to the job board:
 
-Never place secret keys in GitHub files, screenshots, or chat messages.
+   ```sql
+   update profiles set role = 'admin'
+   where id = (select id from auth.users where email = 'you@example.com');
+   ```
+3. Sign in at `/login`. You land on `/admin`, your job board.
 
-6. Click **Deploy**.
+Anyone else who signs up gets no access until you run that command for them.
 
-## Part 3: Prepare Supabase
+## 4. Alerts (optional, recommended)
 
-1. Open your Supabase project.
-2. Open **SQL Editor**.
-3. Open `supabase/migrations/001_init.sql` from the downloaded project, copy all the SQL, and run it.
-4. Open `supabase/migrations/002_production_foundation.sql`, copy all the SQL, and run it.
-5. Open **Authentication** → **URL Configuration**.
-6. Set the Site URL to your Vercel deployment URL.
-7. Add the same URL as a redirect URL.
+- **Texts:** create a Twilio account and phone number, then set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`.
+- **Email:** create a Resend account, verify your domain, then set `RESEND_API_KEY` and `EMAIL_FROM` (e.g. `quotes@yourdomain.com`).
+- **Where you get alerts:** `CONTRACTOR_PHONE` and `CONTRACTOR_EMAIL`.
 
-## Part 4: Verify the site
+Without these, everything still works: the admin page shows each customer's private link so you can text it yourself.
 
-Test these pages:
+## 5. Test it
 
-- `/`
-- `/signup`
-- `/login`
-- `/request`
-- `/dashboard`
-- `/contractor`
-- `/admin`
-
-Create a test homeowner account and submit a sample project.
+1. Open `/request` in a private window and submit a project with your own email.
+2. You land on the customer page (`/p/...`). Bookmark it.
+3. In `/admin`, open the job, set a price and click **Send quote**.
+4. Refresh the customer page, then approve and sign.
+5. Back in `/admin`, set a start date and click **Save & tell customer**.
 
 ## Troubleshooting
 
-- **Vercel says package.json is missing:** the files were uploaded inside an extra folder. Move the contents to the repository root.
-- **Supabase variables are missing:** add them in Vercel Project Settings → Environment Variables, then redeploy.
-- **Login email does not arrive:** check Supabase Authentication settings and spam.
-- **AI estimate does not work:** the app will use the local fallback until `ANTHROPIC_API_KEY` is added.
+- **"We could not save your request":** `SUPABASE_SERVICE_ROLE_KEY` is missing, or migration 003 was not run.
+- **`/admin` keeps sending you to sign in:** your profile's role is not `admin` (step 3.2).
+- **Photos fail to upload:** migration 003 creates the `job-photos` bucket; check it exists under **Storage**.
+- **Vercel says package.json is missing:** the files are inside an extra folder; move them to the repository root.

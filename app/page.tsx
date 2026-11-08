@@ -7,7 +7,7 @@ const services = [
   ['Flooring', 'LVP, hardwood and tile installation with removal and prep.'],
   ['Bathroom remodeling', 'Guided planning for showers, tile, vanities, toilets and finishes.'],
   ['Basement waterproofing', 'Drainage, sump pumps, wall protection and crawl-space solutions.'],
-  ['General remodeling', 'Submit a custom project for local review and contractor matching.'],
+  ['General remodeling', 'Submit a custom project for review and a firm quote.'],
 ];
 
 export default function Home() {
@@ -24,10 +24,10 @@ export default function Home() {
             </p>
             <div className="actions">
               <Link className="btn" href="/request">Start my estimate</Link>
-              <Link className="btn secondary" href="/contractor">Join as a contractor</Link>
+              <Link className="btn secondary" href="/#how-it-works">How it works</Link>
             </div>
             <div className="trust-row">
-              <span>✓ Human-reviewed pricing</span><span>✓ Local contractor matching</span><span>✓ Clear project scopes</span>
+              <span>✓ Instant estimate</span><span>✓ Approve your quote online</span><span>✓ Track your job and message us</span>
             </div>
           </div>
           <div className="estimate-card card">
@@ -35,7 +35,7 @@ export default function Home() {
             <h2>Paint three bedrooms</h2>
             <p className="muted">Walls, ceilings, trim and minor repairs in an occupied home.</p>
             <div className="price-block"><span>Estimated range</span><strong>$3,200–$4,100</strong></div>
-            <div className="mini-grid"><div><b>3–5</b><span>workdays</span></div><div><b>4</b><span>scope items</span></div><div><b>Local</b><span>contractor match</span></div></div>
+            <div className="mini-grid"><div><b>3–5</b><span>workdays</span></div><div><b>4</b><span>scope items</span></div><div><b>Local</b><span>crew</span></div></div>
             <p className="fine-print">Final pricing requires review, measurements and verification of site conditions.</p>
           </div>
         </section>
@@ -46,11 +46,11 @@ export default function Home() {
         </section>
 
         <section id="how-it-works" className="section soft-section">
-          <div className="wrap"><div className="section-heading"><span className="eyebrow">How it works</span><h2>From photos to a local professional</h2></div>
+          <div className="wrap"><div className="section-heading"><span className="eyebrow">How it works</span><h2>From request to finished job, in one place</h2></div>
             <div className="grid steps">
               <div className="step"><b>1</b><h3>Describe the project</h3><p>Add the property, service, measurements, timing and project details.</p></div>
               <div className="step"><b>2</b><h3>Receive a preliminary estimate</h3><p>Our estimating system creates a scope, price range, assumptions and risks.</p></div>
-              <div className="step"><b>3</b><h3>Get matched locally</h3><p>After review, the job can be offered to qualified contractors near the property.</p></div>
+              <div className="step"><b>3</b><h3>Approve and track</h3><p>Get your final quote on your private project page, approve it online, pick a start date and message us any time.</p></div>
             </div>
           </div>
         </section>

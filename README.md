@@ -1,49 +1,46 @@
 # HomeQuote Local
 
-HomeQuote Local is a nationwide U.S. home-services marketplace MVP. Homeowners can request AI-assisted preliminary estimates, contractors can receive matched opportunities, and administrators can review and assign projects.
+One place for a local contractor and their customers, from first request to finished job.
 
-## What is included
+**Customers** (no account needed)
+- Fill out a 3-step request form with photos and get an instant preliminary estimate.
+- Get a private project link where they can see their quote, **approve and sign it online**,
+  message the contractor, add photos and follow progress (requested → quoted → approved → scheduled → in progress → done).
 
-- Responsive public homepage
-- Nationwide project intake for all 50 states and Washington, D.C.
-- Multi-step estimate request wizard
-- Service-aware local estimate fallback
-- Anthropic Claude estimate API route
-- Homeowner, contractor, and administrator dashboards
-- Email/password authentication foundation with Supabase
-- Database-backed project API for signed-in users
-- Private project-photo storage foundation
-- Contractor service-area and matching structure
-- Supabase SQL migrations with row-level security
-- Standalone browser preview at `preview/index.html`
+**The contractor** (`/admin`, sign-in required)
+- A job board with every lead, filtered by status, plus pipeline totals.
+- Each job shows the customer's details, photos, the AI estimate with line items, crew labor,
+  risks to check and questions to ask.
+- Turn the estimate into a real quote and send it, schedule the start date, update the status,
+  reply to messages and keep private notes.
+- Text/email alerts for new leads, customer messages and approvals.
 
-## Fast preview without installation
+## How it fits together
 
-Open `preview/index.html` in Chrome, Edge, or Safari. The preview stores demo data in that browser only and does not require API keys.
+| Piece | Where |
+|---|---|
+| Request form | `app/request/page.tsx` → `POST /api/jobs` |
+| AI estimate (Claude, guaranteed-valid output; calculator fallback) | `lib/ai-estimate.ts`, `lib/estimate.ts` |
+| Customer project page | `app/p/[token]/` + `app/api/p/[token]/` |
+| Contractor job board | `app/admin/` + `app/api/admin/jobs/` |
+| Text/email alerts (Twilio / Resend, optional) | `lib/notify.ts` |
+| Database tables and security rules | `supabase/migrations/003_jobs_portal.sql` |
 
-## Run the full application locally
+**Security model:** customers are identified by an unguessable link (144-bit random token). Only server code
+with the service-role key reads jobs by token, and it returns customer-safe fields only (no private notes,
+crew payout or risk notes). The job tables are readable only by accounts with the `admin` role.
+Public endpoints are rate-limited per IP and the request form has a spam trap.
 
-1. Install Node.js 20 or newer.
-2. Rename `.env.example` to `.env.local`.
-3. Add your Supabase URL and publishable/anon key.
-4. Optionally add an Anthropic API key.
-5. Open a terminal in this folder.
-6. Run `npm install`.
-7. Run `npm run dev`.
-8. Open `http://localhost:3000`.
+## Run it locally
 
-## Deploy with GitHub and Vercel
+1. Node.js 20 or newer.
+2. Copy `.env.example` to `.env.local` and fill in the Supabase values.
+3. `npm install`, then `npm run dev`, then open http://localhost:3000.
 
-1. Extract this ZIP on your computer.
-2. Open the extracted `homequote-local` folder.
-3. Upload **the contents inside the folder** to the root of your GitHub repository. Do not upload the outer folder as an extra nested level.
-4. Import the repository into Vercel.
-5. Add the environment variables listed in `.env.example`.
-6. Deploy.
-7. Run the SQL migration files in Supabase in numerical order.
+Full setup, including making your admin account: **[SETUP-CHECKLIST.md](SETUP-CHECKLIST.md)**.
 
-Detailed instructions are in `SETUP-CHECKLIST.md`.
+## Not built yet
 
-## Important status
-
-This is an MVP development build, not yet a fully launched marketplace. Payments, identity/compliance verification, production legal documents, live messaging, notifications, complete photo workflows, and security testing still require further development.
+- Deposits and payments (Stripe keys are reserved in `.env.example`).
+- Multiple contractors / marketplace matching. This version is one business and its customers.
+- Rate limiting is per server instance; add Vercel Firewall rate limits for stronger protection.

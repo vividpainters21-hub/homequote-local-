@@ -23,12 +23,13 @@ type Input = {service:string;description:string;squareFeet?:number;linearFeet?:n
 const round50=(n:number)=>Math.max(50,Math.round(n/50)*50);
 
 export function localFallback(input: Input): Estimate {
-  const sf=Math.max(1,input.squareFeet||0), lf=Math.max(1,input.linearFeet||0), rooms=Math.max(1,input.rooms||1);
+  // 0 means "not provided", so the room count and minimums apply instead of a fake 1 sq ft.
+  const sf=Math.max(0,input.squareFeet||0), lf=Math.max(0,input.linearFeet||0), rooms=Math.max(1,input.rooms||1);
   const service=input.service.toLowerCase(); let labor=0, materials=0, days=[2,5], scope:string[]=[];
   if(service.includes('paint')){labor=Math.max(450,sf?sf*2.4:rooms*850);materials=Math.max(180,sf?sf*.65:rooms*210);days=[1,Math.max(3,rooms*2)];scope=['Protect floors and contents','Patch and prepare surfaces','Apply finish coats','Complete trim and cleanup'];}
   else if(service.includes('drywall')){labor=Math.max(650,sf*3.25);materials=Math.max(250,sf*1.15);days=[2,7];scope=['Protect work area','Remove or prepare damaged material','Install and finish drywall','Sand and prepare for paint'];}
-  else if(service.includes('floor')){labor=Math.max(750,sf*3.5);materials=input.materialsBy==='Platform supplies materials'?sf*3.25:Math.max(150,sf*.45);days=[2,8];scope=['Remove or prepare existing floor','Inspect and prepare subfloor','Install flooring system','Install transitions and clean area'];}
-  else if(service.includes('bath')){labor=Math.max(5500,sf*95);materials=input.materialsBy==='Platform supplies materials'?Math.max(2500,sf*55):650;days=[7,18];scope=['Protect and demolish selected finishes','Complete approved rough work','Waterproof and install finishes','Install fixtures and complete final cleanup'];}
+  else if(service.includes('floor')){labor=Math.max(750,sf*3.5);materials=input.materialsBy==='Contractor supplies materials'?sf*3.25:Math.max(150,sf*.45);days=[2,8];scope=['Remove or prepare existing floor','Inspect and prepare subfloor','Install flooring system','Install transitions and clean area'];}
+  else if(service.includes('bath')){labor=Math.max(5500,sf*95);materials=input.materialsBy==='Contractor supplies materials'?Math.max(2500,sf*55):650;days=[7,18];scope=['Protect and demolish selected finishes','Complete approved rough work','Waterproof and install finishes','Install fixtures and complete final cleanup'];}
   else if(service.includes('waterproof')){labor=Math.max(2800,lf*58);materials=Math.max(900,lf*22);days=[2,8];scope=['Inspect water-entry conditions','Prepare drainage or wall system','Install approved waterproofing components','Test system and restore work area'];}
   else {labor=Math.max(750,sf*4.25);materials=Math.max(250,labor*.22);days=[2,8];scope=['Verify project conditions','Complete agreed preparation','Perform requested installation or repair','Final cleanup and walkthrough'];}
   const difficulty=input.condition==='Major repairs or difficult access'?1.25:input.condition==='Moderate repairs'?1.12:1;

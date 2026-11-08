@@ -1,6 +1,6 @@
-import { DashboardShell } from '@/components/DashboardShell';
-import { ProjectTable } from '@/components/ProjectTable';
+import { redirect } from 'next/navigation';
 
+// The old browser-only dashboard was replaced by /admin (contractor) and /p/<link> (customers).
 export default function Page() {
-  return <DashboardShell title="Homeowner Dashboard"><ProjectTable mode="homeowner" /></DashboardShell>;
+  redirect('/admin');
 }

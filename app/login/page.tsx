@@ -18,7 +18,8 @@ export default function LoginPage() {
     try {
       const { error } = await createClient().auth.signInWithPassword({ email, password });
       if (error) throw error;
-      router.push('/dashboard'); router.refresh();
+      const next = new URLSearchParams(window.location.search).get('next');
+      router.push(next && next.startsWith('/') && !next.startsWith('//') ? next : '/admin'); router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Unable to sign in.');
     } finally { setLoading(false); }
