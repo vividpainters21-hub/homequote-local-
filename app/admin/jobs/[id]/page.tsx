@@ -7,6 +7,7 @@ import { customerLink } from '@/lib/notify';
 import type { Estimate } from '@/lib/estimate';
 import { AdminShell } from '@/components/AdminShell';
 import { JobEditor } from './JobEditor';
+import type { PaymentRow } from '@/lib/payments';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,9 +19,10 @@ export default async function AdminJob({ params }: { params: Promise<{ id: strin
 
   const { data: job } = await admin.supabase.from('jobs').select('*').eq('id', id).single<JobRow>();
   if (!job) notFound();
-  const [{ data: messages }, { data: photoRows }] = await Promise.all([
+  const [{ data: messages }, { data: photoRows }, { data: payments }] = await Promise.all([
     admin.supabase.from('job_messages').select('*').eq('job_id', id).order('created_at'),
     admin.supabase.from('job_photos').select('storage_path, original_name, content_type').eq('job_id', id).order('created_at'),
+    admin.supabase.from('job_payments').select('id, kind, method, amount_cents, note, created_at').eq('job_id', id).order('created_at'),
   ]);
 
   // Short-lived links to view the customer's private photos.
@@ -75,10 +77,13 @@ export default async function AdminJob({ params }: { params: Promise<{ id: strin
           job={{
             id: job.id, status: job.status, quoteCents: job.quote_cents, quoteDetails: job.quote_details, quoteSentAt: job.quote_sent_at,
             approvedAt: job.approved_at, approvedSignature: job.approved_signature, scheduledFor: job.scheduled_for, internalNotes: job.internal_notes,
+            depositPercent: job.deposit_percent, balanceRequestedAt: job.balance_requested_at,
             suggestedQuote: est ? Math.round((est.customerPriceLow + est.customerPriceHigh) / 2) : null,
             suggestedDetails: est ? est.scope.map((s) => `• ${s.title}: ${s.description}`).join('\n') + (est.exclusions.length ? `\n\nNot included: ${est.exclusions.join('; ')}` : '') : '',
           }}
           messages={(messages ?? []) as JobMessage[]}
+          payments={(payments ?? []) as PaymentRow[]}
+          stripeReady={Boolean(process.env.STRIPE_SECRET_KEY)}
           customerLink={customerLink(job.public_token)}
         />
       </div>

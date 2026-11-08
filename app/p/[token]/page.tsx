@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { PUBLIC_JOB_COLUMNS, STATUS_LABEL, TIMELINE, centsToMoney, fullAddress, toPublicJob, type JobMessage } from '@/lib/jobs';
 import { businessName } from '@/lib/notify';
 import { PortalActions } from './PortalActions';
+import { PAYABLE_STATUSES, summarizePayments } from '@/lib/payments';
 
 export const dynamic = 'force-dynamic';
 // The token in the URL is the customer's key: keep the page out of search engines and referrers.
@@ -11,15 +12,22 @@ export const metadata: Metadata = { title: 'Your project', robots: { index: fals
 
 const formatDate = (d: string) => new Date(d.length === 10 ? `${d}T12:00:00` : d).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
-export default async function CustomerPortal({ params }: { params: Promise<{ token: string }> }) {
+export default async function CustomerPortal({ params, searchParams }: { params: Promise<{ token: string }>; searchParams: Promise<{ paid?: string }> }) {
   const { token } = await params;
+  const { paid: justPaid } = await searchParams;
   if (!/^[a-f0-9]{36}$/.test(token)) notFound();
 
   const db = createAdminClient();
   const { data: row } = await db.from('jobs').select(PUBLIC_JOB_COLUMNS).eq('public_token', token).single();
   if (!row) notFound();
   const job = toPublicJob(row as Parameters<typeof toPublicJob>[0]);
-  const { data: messages } = await db.from('job_messages').select('id, sender, body, created_at').eq('job_id', job.id).order('created_at');
+  const [{ data: messages }, { data: payments }] = await Promise.all([
+    db.from('job_messages').select('id, sender, body, created_at').eq('job_id', job.id).order('created_at'),
+    db.from('job_payments').select('amount_cents').eq('job_id', job.id),
+  ]);
+  const pay = summarizePayments(job.quote_cents, job.deposit_percent, payments ?? []);
+  const showPayments = Boolean(job.approved_at) && job.quote_cents != null && PAYABLE_STATUSES.includes(job.status);
+  const online = Boolean(process.env.STRIPE_SECRET_KEY);
 
   const stepIndex = TIMELINE.indexOf(job.status);
   const phone = process.env.NEXT_PUBLIC_BUSINESS_PHONE;
@@ -48,10 +56,11 @@ export default async function CustomerPortal({ params }: { params: Promise<{ tok
             <span className="eyebrow">Your quote</span>
             <div className="quote-amount">{centsToMoney(job.quote_cents)}</div>
             {job.quote_details && <div className="quote-details">{job.quote_details}</div>}
+            {job.deposit_percent > 0 && <p className="muted">Payment terms: {job.deposit_percent}% deposit ({centsToMoney(Math.round(job.quote_cents * job.deposit_percent / 100))}) after approval to book your start date, remainder when the work is complete.</p>}
             {job.approved_at ? (
               <div className="success-banner"><b>Approved</b> by {job.approved_signature} on {formatDate(job.approved_at)}. Thank you!</div>
             ) : (
-              <PortalActions token={token} mode="approve" quoteCents={job.quote_cents} />
+              <PortalActions token={token} mode="approve" quoteCents={job.quote_cents} depositPercent={job.deposit_percent} />
             )}
           </section>
         ) : (
@@ -61,6 +70,29 @@ export default async function CustomerPortal({ params }: { params: Promise<{ tok
             <p className="muted">This is an automatic starting range, not a quote. We will review your project, may ask a few questions or visit, and then send your final quote here.</p>
             {job.scope.length > 0 && <><h3>Proposed scope</h3><div className="scope-list">{job.scope.map((s, i) => <div key={`${s.title}-${i}`}><span>{i + 1}</span><div><b>{s.title}</b><p>{s.description}</p></div></div>)}</div></>}
             {(job.assumptions.length > 0 || job.exclusions.length > 0) && <div className="result-columns"><div><h3>Assumptions</h3><ul>{job.assumptions.map((a) => <li key={a}>{a}</li>)}</ul></div><div><h3>Not included</h3><ul>{job.exclusions.map((e) => <li key={e}>{e}</li>)}</ul></div></div>}
+          </section>
+        )}
+
+        {showPayments && (
+          <section className="card">
+            <span className="eyebrow">Payments</span>
+            {justPaid && <div className="success-banner">Thank you! Your payment is being confirmed and will show here shortly.</div>}
+            <div className="est-row">
+              <div><small>Total</small><b>{centsToMoney(pay.total)}</b></div>
+              <div><small>Paid</small><b>{centsToMoney(pay.paid)}</b></div>
+              <div><small>Remaining</small><b>{centsToMoney(pay.remaining)}</b></div>
+            </div>
+            {pay.remaining === 0 ? (
+              <div className="success-banner"><b>Paid in full.</b> Thank you!</div>
+            ) : pay.depositDue > 0 ? (
+              online ? <PortalActions token={token} mode="pay" kind="deposit" amountCents={pay.depositDue} label={`Pay ${job.deposit_percent}% deposit`} />
+                : <p className="muted">A {job.deposit_percent}% deposit of {centsToMoney(pay.depositDue)} is due to book your start date. Message us to arrange payment.</p>
+            ) : job.balance_requested_at ? (
+              online ? <PortalActions token={token} mode="pay" kind="balance" amountCents={pay.remaining} label="Pay remaining balance" />
+                : <p className="muted">Your remaining balance of {centsToMoney(pay.remaining)} is due. Message us to arrange payment.</p>
+            ) : (
+              <p className="muted">Deposit received. The remaining balance is due when the work is complete.</p>
+            )}
           </section>
         )}
 

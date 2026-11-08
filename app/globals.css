@@ -36,3 +36,4 @@
 @media(max-width:580px){.timeline{grid-template-columns:repeat(3,1fr);row-gap:14px}.est-row{grid-template-columns:1fr}.portal-title{font-size:30px}.quote-amount{font-size:36px}.bubble{max-width:100%}}
 .job-main,.job-side,.job-main>.card,.job-side>.card{min-width:0}.job-main a{overflow-wrap:anywhere}
 .main{min-width:0}
+.pay-box{display:grid;gap:8px;margin-top:14px}.pay-list{list-style:none;padding:0;margin:0;display:grid;gap:8px}.pay-list li{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:8px}.pay-list small{display:block;color:var(--muted)}.link-danger{background:none;border:0;color:#9b1c1c;font-weight:700;cursor:pointer}.record-pay{display:grid;gap:10px}.record-pay summary{cursor:pointer;font-weight:800;color:var(--green)}.record-pay[open]{display:grid;gap:10px}

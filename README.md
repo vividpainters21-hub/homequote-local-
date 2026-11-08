@@ -6,6 +6,7 @@ One place for a local contractor and their customers, from first request to fini
 - Fill out a 3-step request form with photos and get an instant preliminary estimate.
 - Get a private project link where they can see their quote, **approve and sign it online**,
   message the contractor, add photos and follow progress (requested → quoted → approved → scheduled → in progress → done).
+- Pay the deposit and the final balance online (Stripe Checkout: card, Apple Pay, Google Pay).
 
 **The contractor** (`/admin`, sign-in required)
 - A job board with every lead, filtered by status, plus pipeline totals.
@@ -13,7 +14,8 @@ One place for a local contractor and their customers, from first request to fini
   risks to check and questions to ask.
 - Turn the estimate into a real quote and send it, schedule the start date, update the status,
   reply to messages and keep private notes.
-- Text/email alerts for new leads, customer messages and approvals.
+- Set the deposit % on each quote, request the final payment, record cash/check/Zelle, and see paid vs. remaining.
+- Text/email alerts for new leads, customer messages, approvals and payments.
 
 ## How it fits together
 
@@ -23,8 +25,9 @@ One place for a local contractor and their customers, from first request to fini
 | AI estimate (Claude, guaranteed-valid output; calculator fallback) | `lib/ai-estimate.ts`, `lib/estimate.ts` |
 | Customer project page | `app/p/[token]/` + `app/api/p/[token]/` |
 | Contractor job board | `app/admin/` + `app/api/admin/jobs/` |
+| Payments: checkout, Stripe webhook, manual entries | `app/api/p/[token]/checkout/`, `app/api/stripe/webhook/`, `app/api/admin/jobs/[id]/payments/`, `lib/payments.ts` |
 | Text/email alerts (Twilio / Resend, optional) | `lib/notify.ts` |
-| Database tables and security rules | `supabase/migrations/003_jobs_portal.sql` |
+| Database tables and security rules | `supabase/migrations/003_jobs_portal.sql`, `004_payments.sql` |
 
 **Security model:** customers are identified by an unguessable link (144-bit random token). Only server code
 with the service-role key reads jobs by token, and it returns customer-safe fields only (no private notes,
@@ -41,6 +44,6 @@ Full setup, including making your admin account: **[SETUP-CHECKLIST.md](SETUP-CH
 
 ## Not built yet
 
-- Deposits and payments (Stripe keys are reserved in `.env.example`).
+- Refunds from inside the app (do them in the Stripe dashboard for now).
 - Multiple contractors / marketplace matching. This version is one business and its customers.
 - Rate limiting is per server instance; add Vercel Firewall rate limits for stronger protection.

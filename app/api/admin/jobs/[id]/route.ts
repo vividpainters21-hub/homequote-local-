@@ -10,6 +10,7 @@ const PatchSchema = z.object({
   quoteDetails: z.string().max(10_000).optional(),
   scheduledFor: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   internalNotes: z.string().max(10_000).optional(),
+  depositPercent: z.number().int().min(0).max(100).optional(),
   /** Marks the quote as sent and emails/texts the customer their link. */
   sendQuote: z.boolean().optional(),
   /** Tell the customer about a status or schedule change. */
@@ -35,8 +36,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (p.scheduledFor !== undefined) changes.scheduled_for = p.scheduledFor;
   if (p.internalNotes !== undefined) changes.internal_notes = p.internalNotes;
   if (p.status) changes.status = p.status;
+  if (p.depositPercent !== undefined) changes.deposit_percent = p.depositPercent;
 
   const quoteChanged = changes.quote_cents !== undefined && changes.quote_cents !== current.quote_cents;
+  const depositChanged = changes.deposit_percent !== undefined && changes.deposit_percent !== current.deposit_percent;
+  if (current.approved_at && depositChanged) {
+    return NextResponse.json({ error: 'The deposit terms were part of the approved quote and cannot change now.' }, { status: 409 });
+  }
   if (current.approved_at && quoteChanged) {
     return NextResponse.json({ error: 'This quote was already approved. Create a change order in the notes and message the customer instead.' }, { status: 409 });
   }

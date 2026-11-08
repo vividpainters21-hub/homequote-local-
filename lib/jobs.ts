@@ -67,6 +67,8 @@ export interface JobRow {
   approved_ip: string | null;
   scheduled_for: string | null;
   internal_notes: string;
+  deposit_percent: number;
+  balance_requested_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -81,11 +83,11 @@ export interface JobMessage {
 
 /** Columns a customer is allowed to see. Never includes internal notes, payout targets or IPs. */
 export const PUBLIC_JOB_COLUMNS =
-  'id, status, customer_name, address, city, state, zip, service, description, estimate_low_cents, estimate_high_cents, quote_cents, quote_details, quote_sent_at, approved_at, approved_signature, scheduled_for, created_at, ai_estimate';
+  'id, status, customer_name, address, city, state, zip, service, description, estimate_low_cents, estimate_high_cents, quote_cents, quote_details, quote_sent_at, approved_at, approved_signature, scheduled_for, created_at, ai_estimate, deposit_percent, balance_requested_at';
 
 export type PublicJob = Pick<
   JobRow,
-  'id' | 'status' | 'customer_name' | 'address' | 'city' | 'state' | 'zip' | 'service' | 'description' | 'estimate_low_cents' | 'estimate_high_cents' | 'quote_cents' | 'quote_details' | 'quote_sent_at' | 'approved_at' | 'approved_signature' | 'scheduled_for' | 'created_at'
+  'id' | 'status' | 'customer_name' | 'address' | 'city' | 'state' | 'zip' | 'service' | 'description' | 'estimate_low_cents' | 'estimate_high_cents' | 'quote_cents' | 'quote_details' | 'quote_sent_at' | 'approved_at' | 'approved_signature' | 'scheduled_for' | 'created_at' | 'deposit_percent' | 'balance_requested_at'
 > & { scope: { title: string; description: string }[]; assumptions: string[]; exclusions: string[] };
 
 /** Strip the contractor-only parts (payout targets, risk notes) out of the AI estimate. */

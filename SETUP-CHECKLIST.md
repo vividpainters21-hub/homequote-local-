@@ -7,7 +7,7 @@ Text and email alerts are optional and can be added later.
 
 1. Create a project at supabase.com.
 2. Open **SQL Editor** and run each file in `supabase/migrations/`, in order:
-   `001_init.sql`, then `002_production_foundation.sql`, then `003_jobs_portal.sql`.
+   `001_init.sql`, `002_production_foundation.sql`, `003_jobs_portal.sql`, then `004_payments.sql`.
 3. **Project Settings → API**: copy the **Project URL**, the **anon / publishable key** and the **service_role key**.
    The service_role key is a master key. Only ever paste it into Vercel's environment variables.
 
@@ -42,13 +42,29 @@ Anyone else who signs up gets no access until you run that command for them.
 
 Without these, everything still works: the admin page shows each customer's private link so you can text it yourself.
 
-## 5. Test it
+## 5. Online payments (optional)
+
+Customers pay deposits and final balances on Stripe's secure checkout page. You can always record cash, checks and Zelle by hand, even without Stripe.
+
+1. Create a Stripe account and stay in **test mode** at first.
+2. **Developers → API keys**: copy the secret key (`sk_test_...`) into Vercel as `STRIPE_SECRET_KEY`.
+3. **Developers → Webhooks → Add endpoint**: URL `https://YOUR-SITE/api/stripe/webhook`, events
+   `checkout.session.completed` and `checkout.session.async_payment_succeeded`.
+   Copy its signing secret (`whsec_...`) into Vercel as `STRIPE_WEBHOOK_SECRET`, then redeploy.
+4. Test a payment with card `4242 4242 4242 4242`, any future date, any CVC. It should show up on the job within seconds.
+5. When it works, switch Stripe to live mode, repeat steps 2–3 with the live keys, and redeploy.
+
+Payments only count once Stripe confirms them through the webhook. If a test payment never shows up, the webhook secret or URL is wrong.
+Refunds are done in the Stripe dashboard.
+
+## 6. Test it
 
 1. Open `/request` in a private window and submit a project with your own email.
 2. You land on the customer page (`/p/...`). Bookmark it.
 3. In `/admin`, open the job, set a price and click **Send quote**.
 4. Refresh the customer page, then approve and sign.
 5. Back in `/admin`, set a start date and click **Save & tell customer**.
+6. With Stripe set up: pay the deposit from the customer page, then click **Request final payment** in `/admin` and pay the rest.
 
 ## Troubleshooting
 
